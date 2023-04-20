@@ -1,20 +1,14 @@
-import React from 'react';
-import './App.css';
-import VideoChat from './VideoChat';
+import React from "react";
+import "./App.css";
+import VideoChat from "./Components/VideoChat/VideoChat";
+import { SocketProvider } from "./providers/SocketProvider";
+import Home from "./Components/VideoChat/Home";
 
 const App = () => {
   return (
-    <div className="app">
-      <header>
-        <h1>Konnect</h1>
-      </header>
-      <main>
-        <VideoChat />
-      </main>
-      <footer>
-        footer
-      </footer>
-    </div>
+    <SocketProvider>
+      <Home/>
+    </SocketProvider>
   );
 };
 
