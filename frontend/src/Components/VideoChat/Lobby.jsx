@@ -1,7 +1,7 @@
 import React from "react";
 
 const Lobby = ({
-  username,
+  userName,
   handleUsernameChange,
   roomName,
   handleRoomNameChange,
@@ -16,7 +16,7 @@ const Lobby = ({
         <input
           type="text"
           id="field"
-          value={username}
+          value={userName}
           onChange={handleUsernameChange}
           readOnly={connecting}
           required

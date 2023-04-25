@@ -2,12 +2,16 @@ import React, { useState, useCallback, useEffect } from "react";
 import Video from "twilio-video";
 import Lobby from "./Lobby";
 import Room from "./Room";
+import { useSocket } from "../../providers/SocketProvider";
 import axios from "axios";
 const VideoChat = () => {
-  const [username, setUsername] = useState("");
+  const { socket, isConnected } = useSocket();
+
+  const [userName, setUsername] = useState("");
   const [roomName, setRoomName] = useState("");
   const [room, setRoom] = useState(null);
   const [connecting, setConnecting] = useState(false);
+  const [joiningRequests, setJoiningRequests] = useState([]);
 
   const handleUsernameChange = useCallback((event) => {
     setUsername(event.target.value);
@@ -18,13 +22,15 @@ const VideoChat = () => {
   }, []);
 
   const handleSubmit = useCallback(
-    async (event) => {
+    (event) => {
       event.preventDefault();
+      if(isConnected && socket){socket.emit(`room-join-request`, {id : socket.id, roomName : roomName, userName : userName});
+      // return;
       setConnecting(true);
       axios
         .post(`${import.meta.env.VITE_API_URL}/twilio/video/token`, {
           roomName: roomName,
-          userName: username,
+          userName: userName,
         })
         .then(({ data }) => {
           Video.connect(data.token, {
@@ -39,9 +45,9 @@ const VideoChat = () => {
               setConnecting(false);
             });
         })
-        .catch((err) => console.log(err.message));
+        .catch((err) => console.log(err.message));}
     },
-    [roomName, username]
+    [roomName, userName, isConnected, socket]
   );
 
   const handleLogout = useCallback(() => {
@@ -55,6 +61,14 @@ const VideoChat = () => {
       return null;
     });
   }, []);
+
+  useEffect(()=>{
+    if(isConnected){
+      socket.on(`join-request`, (data)=>{
+      console.log('join-request-received', data)
+      setJoiningRequests([...joiningRequests, data]);
+    })}
+  }, [isConnected, socket])
 
   useEffect(() => {
     if (room) {
@@ -78,12 +92,12 @@ const VideoChat = () => {
   let render;
   if (room) {
     render = (
-      <Room roomName={roomName} room={room} handleLogout={handleLogout} />
+      <Room roomName={roomName} room={room} handleLogout={handleLogout} joiningRequests={joiningRequests}/>
     );
   } else {
     render = (
       <Lobby
-        username={username}
+        userName={userName}
         roomName={roomName}
         handleUsernameChange={handleUsernameChange}
         handleRoomNameChange={handleRoomNameChange}
