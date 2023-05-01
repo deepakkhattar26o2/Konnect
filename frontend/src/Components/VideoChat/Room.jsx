@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import Participant from "./Participant";
-
-const Room = ({ roomName, room, handleLogout , joiningRequests}) => {
+import { useSocket } from "../../providers/SocketProvider";
+const Room = (
+  { roomName, room, handleLogout, joiningRequests },
+) => {
   const [participants, setParticipants] = useState([]);
-
+  const { socket } = useSocket();
   useEffect(() => {
     const participantConnected = (participant) => {
       setParticipants((prevParticipants) => [...prevParticipants, participant]);
@@ -30,7 +32,13 @@ const Room = ({ roomName, room, handleLogout , joiningRequests}) => {
 
   return (
     <div className="room">
-      <h2 onClick={()=>{console.log(joiningRequests)}}>Room: {roomName}</h2>
+      <h2
+        onClick={() => {
+          console.log(joiningRequests);
+        }}
+      >
+        Room: {roomName}
+      </h2>
       <button onClick={handleLogout}>Log out</button>
       <div className="local-participant">
         {room ? (
@@ -41,8 +49,38 @@ const Room = ({ roomName, room, handleLogout , joiningRequests}) => {
         ) : (
           ""
         )}
+
+        <div>
+          {joiningRequests.map((pt, itr) => (
+            <div key={itr}>
+              <div>{pt.userName} wants to joing the room!</div>
+              <div
+                onClick={() => {
+                  console.log('sending acceptance request socket with data' , pt, roomName);
+                  socket.emit("join-request-accepted", {
+                    participant: pt,
+                    roomName: roomName,
+                  });
+                }}
+              >
+                accept
+              </div>
+              <div
+                onClick={() => {
+                  console.log('sending rejection request socket with data' , pt, roomName);
+                  socket.emit("join-request-rejected", {
+                    participant: pt,
+                    roomName: roomName,
+                  });
+                }}
+              >
+                reject
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <h3>Remote Participants</h3>
+      <h3>Remote </h3>
       <div className="remote-participants">{remoteParticipants}</div>
     </div>
   );

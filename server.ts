@@ -36,17 +36,18 @@ io.on("connection", (socket: Socket) => {
 
   socket.on("room-join-request", (data) => {
     let { id, roomName, userName } = data;
+    if (!id || !roomName || !userName) return;
     let room: Participant[] | undefined = roomMap.get(roomName);
     let participant: Participant = {
       id: id,
       userName: userName,
       role: Role.MEMBER,
     };
-    console.log("joinee details", participant);
     if (!room) {
       //create map entry with this user role as host!
       participant.role = Role.HOST;
       roomMap.set(roomName, [participant]);
+      io.to(participant.id).emit("request-accepted", { roomName: roomName, participant : participant });
       return;
     }
     //send socket request to host socket id
@@ -54,20 +55,32 @@ io.on("connection", (socket: Socket) => {
     let host: Participant | undefined = room?.find(
       (member) => member.role === Role.HOST
     );
-    console.log("host details", host);
     if (!host) return;
 
     io.to(host.id).emit(`join-request`, participant);
   });
 
-  socket.on("join-request-accepted", (data)=>{
-    
-  })
+  interface responseData {
+    participant?: Participant;
+    roomName: string;
+  }
 
+  socket.on("join-request-accepted", (data: responseData) => {
+    const { participant, roomName } = data;
+    if (!participant || !roomName) return;
+    let room: Participant[] | undefined = roomMap.get(roomName);
+    if (!room) return;
+    roomMap.set(roomName, [...room, participant]);
+    console.log('request accepted for', roomName, participant)
+    io.to(participant.id).emit("request-accepted", { roomName: roomName, participant : participant });
+  });
 
-  socket.on("join-request-rejected", (data)=>{
-
-  })
+  socket.on("join-request-rejected", (data: responseData) => {
+    const { participant, roomName } = data;
+    if (!participant || !roomName) return;
+    console.log('join request rejected for', data)
+    io.to(participant.id).emit("request-rejected", { roomName: roomName, participant : participant });
+  });
 
   socket.on("test", () => {
     for (let entry of roomMap) {
