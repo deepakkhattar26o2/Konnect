@@ -9,7 +9,7 @@ function Home() {
       <main>
         <VideoChat />
       </main>
-      <footer>footer</footer>
+      <footer>Team Konnect</footer>
     </div>
   );
 }

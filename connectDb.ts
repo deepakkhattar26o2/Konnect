@@ -6,7 +6,7 @@ const local_uri  = String(process.env.DATABASE_URL)
 const atlas_uri = `mongodb+srv://${userName}:${password}@cluster0.arrb0cj.mongodb.net/?retryWrites=true&w=majority`
 const connect = async () =>{
     try{
-        await mongoose.connect(local_uri||"")
+        await mongoose.connect(atlas_uri||local_uri)
         console.log('DB Connected!!')
     }
     catch(err){

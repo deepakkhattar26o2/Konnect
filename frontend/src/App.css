@@ -86,9 +86,9 @@ button:hover {
   position: relative;
 }
 .room button {
-  position: absolute;
   top: 0;
   right: 20px;
+  margin : 20px;
 }
 .room > h3 {
   text-align: center;

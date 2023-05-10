@@ -28,9 +28,11 @@ interface Participant {
   role: Role;
 }
 
+
+
 // Map for rooms and participants
 let roomMap: Map<string, Participant[]> = new Map();
-
+let participantToRoom : Map<string, string> = new Map();
 io.on("connection", (socket: Socket) => {
   console.log(`${socket.id} has connected!`);
 
@@ -48,6 +50,7 @@ io.on("connection", (socket: Socket) => {
       participant.role = Role.HOST;
       roomMap.set(roomName, [participant]);
       io.to(participant.id).emit("request-accepted", { roomName: roomName, participant : participant });
+      participantToRoom.set(participant.id, roomName);
       return;
     }
     //send socket request to host socket id
@@ -72,7 +75,9 @@ io.on("connection", (socket: Socket) => {
     if (!room) return;
     roomMap.set(roomName, [...room, participant]);
     console.log('request accepted for', roomName, participant)
+    participantToRoom.set(participant.id, roomName);
     io.to(participant.id).emit("request-accepted", { roomName: roomName, participant : participant });
+    socket.join(roomName);
   });
 
   socket.on("join-request-rejected", (data: responseData) => {
@@ -82,14 +87,23 @@ io.on("connection", (socket: Socket) => {
     io.to(participant.id).emit("request-rejected", { roomName: roomName, participant : participant });
   });
 
-  socket.on("test", () => {
-    for (let entry of roomMap) {
-      console.log(entry[0], entry[1]);
-    }
-  });
+
+  socket.on("disconnected-from-room", (data : responseData)=>{
+    const {participant, roomName} = data;
+    console.log("data for leaving room : ", data)
+    if(!roomName || !participant) return;
+    socket.leave(data.roomName);
+    // participantToRoom.delete(socket.id);
+    socket.to(data.roomName).emit('user-left', {roomName : roomName, participant : participant});
+  })
+
 
   socket.on("disconnect", () => {
-    console.log(`${socket.id} has disconnected!`);
+    console.log(`${socket.id} has disconnected`);
+    let roomName : string  | undefined= participantToRoom.get(socket.id);
+    if(roomName){
+      socket.to(roomName).emit('user-left', {roomName : roomName});
+    }
   });
 });
 

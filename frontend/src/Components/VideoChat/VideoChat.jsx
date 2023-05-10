@@ -12,7 +12,7 @@ const VideoChat = () => {
   const [room, setRoom] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [joiningRequests, setJoiningRequests] = useState([]);
-
+  const [_self, setSelf] = useState({})
   const handleUsernameChange = useCallback((event) => {
     setUsername(event.target.value);
   }, []);
@@ -23,6 +23,7 @@ const VideoChat = () => {
 
   const handleRequestAccepted = useCallback((_data) => {
     console.log("request accepted, sending request", _data)
+    setSelf(_data.participant)
     const roomName = _data.roomName;
     const userName = _data.participant?.userName;
     axios
@@ -49,13 +50,14 @@ const VideoChat = () => {
 
   const handleRequestRejected = useCallback((_data) => {
     console.log(`your request for room ${_data.roomName} is rejected!`);
+    setConnecting(false);
   }, []);
 
   const handleSubmit = useCallback(
     (event) => {
       event.preventDefault();
       if (isConnected && socket) {
-        console.log("sending socket request to joint the room");
+        console.log("sending socket request to join the room");
         socket.emit(`room-join-request`, {
           id: socket.id,
           roomName: roomName,
@@ -78,13 +80,13 @@ const VideoChat = () => {
       }
       return null;
     });
-  }, []);
+  }, [room]);
 
   useEffect(() => {
     if (isConnected) {
       socket.on(`join-request`, (data) => {
         console.log("received joining request", data);
-        setJoiningRequests([...joiningRequests, data]);
+        setJoiningRequests((prevJoiningRequests)=>[...prevJoiningRequests, data]);
       });
       socket.on("request-accepted", (data) => {
         handleRequestAccepted(data);
@@ -100,24 +102,30 @@ const VideoChat = () => {
     }
   }, [isConnected, socket]);
 
-  useEffect(() => {
-    if (room) {
-      const tidyUp = (event) => {
-        if (event.persisted) {
-          return;
-        }
-        if (room) {
-          handleLogout();
-        }
-      };
-      window.addEventListener("pagehide", tidyUp);
-      window.addEventListener("beforeunload", tidyUp);
-      return () => {
-        window.removeEventListener("pagehide", tidyUp);
-        window.removeEventListener("beforeunload", tidyUp);
-      };
-    }
-  }, [room, handleLogout]);
+  // useEffect(() => {
+  //   if (room) {
+  //     const tidyUp = (event) => {
+  //       socket.emit("disconnected-from-room", {
+  //         roomName: roomName,
+  //         participant: _self,
+  //       });
+  //       console.log("room left with", _self, roomName, socket)
+  //       event.preventDefault();
+  //       if (event.persisted) {
+  //         return;
+  //       }
+  //       if (room) {
+  //         handleLogout();
+  //       }
+  //     };
+  //     window.addEventListener("pagehide", tidyUp);
+  //     window.addEventListener("beforeunload", tidyUp);
+  //     return () => {
+  //       window.removeEventListener("pagehide", tidyUp);
+  //       window.removeEventListener("beforeunload", tidyUp);
+  //     };
+  //   }
+  // }, [room, handleLogout]);
 
   let render;
   if (room) {
@@ -127,6 +135,7 @@ const VideoChat = () => {
         room={room}
         handleLogout={handleLogout}
         joiningRequests={joiningRequests}
+        setJoiningRequests={setJoiningRequests}
       />
     );
   } else {
