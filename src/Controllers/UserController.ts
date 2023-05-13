@@ -1,40 +1,33 @@
 import { NextFunction, Request, Response } from "express";
-import { User, IUser } from "../Models/User";
+import { User } from "../Models/User";
 import emailQueue from "../Helpers/Jobs";
 const bcr = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const randomString = require('randomstring')
 require("dotenv").config();
+import { CurrentUser, IUser, SignUpRequest, LoginRequest } from "../../TypeDefs";
 
-type CurrentUser = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  _id: string;
-};
+// returns user details of current user from jwt token
 const GetAuth = (req: Request): CurrentUser => {
   const token = req.headers.authorization;
   const decoded = jwt.verify(token, process.env.TOKEN_KEY);
   return decoded.data;
 };
 
-const VerifyAuth = (req: Request, res: Response, next: NextFunction) => {
+// verifies if the jwt token is valid
+const VerifyAuth = (req: Request, res: Response, next: NextFunction) => { 
   try {
     const token = req.headers.authorization;
+    // in case of invalid token, token verification throws error
     jwt.verify(token, process.env.TOKEN_KEY);
     next();
-  } catch (err) {
+  } 
+  catch (err) {
     return res.status(500).json({ message: "Auth Failed!" });
   }
 };
 
-type SignUpRequest = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-};
-
+// request validator for sign up request
 const signUpRequestValidator = (body: SignUpRequest): [boolean, string] => {
   if (!body.email) return [false, "email"];
   if (!body.firstName) return [false, "firstName"];
@@ -43,6 +36,7 @@ const signUpRequestValidator = (body: SignUpRequest): [boolean, string] => {
   return [true, "valid"];
 };
 
+// request handler for sign up
 const signUpRequestHandler = async (req: Request, res: Response) => {
   const body: SignUpRequest = req.body;
   //validating request contents
@@ -80,17 +74,14 @@ const signUpRequestHandler = async (req: Request, res: Response) => {
   });
 };
 
-type LoginRequest = {
-  email: string;
-  password: string;
-};
-
+// request validator for login request
 const loginRequestValidator = (body: LoginRequest): [boolean, string] => {
   if (!body.email) return [false, "email"];
   if (!body.password) return [false, "password"];
   return [true, "valid"];
 };
 
+// request handler for login
 const loginRequestHandler = async (req: Request, res: Response) => {
   const body: LoginRequest = req.body;
 
@@ -138,6 +129,7 @@ const verifyEmail = (req : Request, res : Response) =>{
   const email = req.params.email;
   const otp: string = randomString.generate(6);
 
+  //adding process to background worker queue on redis
   emailQueue.add(
     { jobName : "verification" , emailId : email, otp : otp },
     {

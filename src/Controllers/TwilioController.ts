@@ -1,14 +1,11 @@
 require("dotenv").config();
 import { Request, Response } from "express";
 
-type GetAccessTokenBody = {
-  userName: string;
-  roomName: string;
-};
+import { TokenRequestBody } from "../../TypeDefs";
 
 //validating token request body!
 const getAccessTokenValidator = (
-  body: GetAccessTokenBody
+  body: TokenRequestBody
 ): [boolean, string] => {
   if (!body.roomName) {
     return [false, "room name"];
@@ -21,7 +18,7 @@ const getAccessTokenValidator = (
 
 //generates token with video access!
 const getAccessTokenHandler = (req: Request, res: Response) => {
-  const body: GetAccessTokenBody = req.body;
+  const body: TokenRequestBody = req.body;
   const validation = getAccessTokenValidator(body);
 
   if (!validation[0]) {
