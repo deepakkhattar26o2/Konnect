@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import Video from "twilio-video";
 import Lobby from "./Lobby";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Room from "./Room";
 import { useSocket } from "../../providers/SocketProvider";
 import axios from "axios";
@@ -12,7 +14,7 @@ const VideoChat = () => {
   const [room, setRoom] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [joiningRequests, setJoiningRequests] = useState([]);
-  const [_self, setSelf] = useState({})
+  const [_self, setSelf] = useState({});
   const handleUsernameChange = useCallback((event) => {
     setUsername(event.target.value);
   }, []);
@@ -22,8 +24,8 @@ const VideoChat = () => {
   }, []);
 
   const handleRequestAccepted = useCallback((_data) => {
-    console.log("request accepted, sending request", _data)
-    setSelf(_data.participant)
+    console.log("request accepted, sending request", _data);
+    setSelf(_data.participant);
     const roomName = _data.roomName;
     const userName = _data.participant?.userName;
     axios
@@ -37,7 +39,7 @@ const VideoChat = () => {
         })
           .then((room) => {
             setConnecting(false);
-        
+
             setRoom(room);
           })
           .catch((err) => {
@@ -51,6 +53,17 @@ const VideoChat = () => {
   const handleRequestRejected = useCallback((_data) => {
     console.log(`your request for room ${_data.roomName} is rejected!`);
     setConnecting(false);
+    toast.error(`Request for joining room ${_data.roomName} was declined!`, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+      });
+    //show toast
   }, []);
 
   const handleSubmit = useCallback(
@@ -86,19 +99,22 @@ const VideoChat = () => {
     if (isConnected) {
       socket.on(`join-request`, (data) => {
         console.log("received joining request", data);
-        setJoiningRequests((prevJoiningRequests)=>[...prevJoiningRequests, data]);
+        setJoiningRequests((prevJoiningRequests) => [
+          ...prevJoiningRequests,
+          data,
+        ]);
       });
       socket.on("request-accepted", (data) => {
         handleRequestAccepted(data);
       });
 
       socket.on("request-rejected", (data) => {
-        handleRequestRejected(data);        
+        handleRequestRejected(data);
       });
 
-      socket.on("test-socket", (data)=>{
-        console.log("test-socket-data", data)
-      })
+      socket.on("test-socket", (data) => {
+        console.log("test-socket-data", data);
+      });
     }
   }, [isConnected, socket]);
 
@@ -150,7 +166,25 @@ const VideoChat = () => {
       />
     );
   }
-  return render;
+  return (
+    <div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      {/* Same as */}
+      <ToastContainer />
+      {render}
+    </div>
+  );
 };
 
 export default VideoChat;
