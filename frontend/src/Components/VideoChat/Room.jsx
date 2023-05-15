@@ -23,8 +23,8 @@ const Room = ({
       });
     };
 
-    room.on("participarticipantDisconnectedpantConnected", participantConnected);
-    room.on("", participantDisconnected);
+    room.on("participantConnected", participantConnected);
+    room.on("participantDisconnected", participantDisconnected);
     room.participants.forEach(participantConnected);
     return () => {
       room.off("participantConnected", participantConnected);
